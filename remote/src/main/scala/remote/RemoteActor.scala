@@ -22,7 +22,7 @@ case class receiveMinnedCoinFromRemote(bitCoinMinned :ArrayBuffer[String])
 object RemoteActor extends App  {
 	val system = ActorSystem("RemoteActor")
 	val RemoteBoss = system.actorOf(Props[RemoteBoss], name = "RemoteBoss")
-	println(args(0))
+	//println(args(0))
    	RemoteBoss !getWorkRequest(args(0))
 
   // //Worker ! "Starting the remote worker Actor"
@@ -52,12 +52,11 @@ class RemoteBoss extends Actor {
 			/*Currently gatorID is not used as it is hard coded in remote worker*/
 	        val worker = context.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfInstances= 12)))
 	        val numberOfActors = 4  /*Should change this variable to spawn number of actors*/
-	        for( i <- 1 to numberOfZeros )
+	        for( i <- 1 to numberOfActors )
 	        {
 	        	worker !mining( numberOfZeros , i)
 	        	sum = sum + 1;	        	
 	        }
-
 		}
 		case receiveMinnedCoin(bitCoinMinned :ArrayBuffer[String]) =>
 		{
@@ -66,7 +65,7 @@ class RemoteBoss extends Actor {
 		}
 		case finishedMining(number_local :Int ) =>
 		{
-			println("Finnished in worker")
+			//println("Finnished in worker")
 			TotalNumberOfWorker = TotalNumberOfWorker + number_local
 			if(TotalNumberOfWorker == sum)
 			{
@@ -83,6 +82,7 @@ class RemoteBoss extends Actor {
 				println("TotalNumberOfWorker  on this remote worker" + TotalNumberOfWorker)
 				/*have to experiement with one val of worker variable of remote and calling again  */
 			}
+			println("Finished Mining on remote worker")
 		}
 	}
 }
@@ -99,15 +99,15 @@ class Worker extends Actor
 		}	
 		case mining(k:	Int , number: Int)  =>
 		{
-			println("Mining starts on Remote Worker " + number );
+			//println("Mining starts on Remote Worker " + number );
 			var bitcoins_mined :ArrayBuffer[String] =  ArrayBuffer[String]();
-			val deadline = 100.seconds.fromNow
+			val deadline = 600.seconds.fromNow
 			var count = 0;
 			while(deadline.hasTimeLeft) {
 				/*  Reason for adding 'number' is, Different threads gets same random string as seed 
 					Reason for adding another random as same actor was finding two strings of same name ( hence same bitcoin); so add little more randomness
 				*/								
-				var seed = "Moduvyas" + scala.util.Random.alphanumeric.take(4).mkString + scala.util.Random.alphanumeric.take(3).mkString + number  
+				var seed = "Moduvyas#" + scala.util.Random.alphanumeric.take(4).mkString + scala.util.Random.alphanumeric.take(3).mkString + number  
 				var md = MessageDigest.getInstance("SHA-256")
 				var bitcoin:String = md.digest(seed.getBytes).foldLeft("")((s:String, b: Byte) => s + Character.forDigit((b & 0xf0) >> 4, 16) +Character.forDigit(b & 0x0f, 16))
 				count  =  count + 1
@@ -127,7 +127,7 @@ class Worker extends Actor
 				// }
 			}
 			sender ! receiveMinnedCoin(bitcoins_mined)
-			println("Number Of iteration " +count  + " For Minner woker remote\t" + number)
+			println("Number Of iteration " +count  + " For Minner worker remote\t" + number)
 			sender ! finishedMining(1)
 			//context.stop(self) /*Don't want to stop Remote*/
 		}	
