@@ -44,9 +44,7 @@ class RemoteBoss extends Actor {
 			ipAddress = ipAddress_received
 			var remoteWorker = context.actorFor("akka.tcp://MainActor@"+ipAddress+":7890/user/Boss")
 			remoteWorker !gotWorkRequest()
-
 		}
-
 		case takeWork(numberOfZeros :Int ,  gatorID :String , number :Int) =>
 		{
 			println("Got work and starting local workers ")
@@ -57,7 +55,7 @@ class RemoteBoss extends Actor {
 	        for( i <- 1 to numberOfZeros )
 	        {
 	        	worker !mining( numberOfZeros , i)
-	        	sum = sum + i;	        	
+	        	sum = sum + 1;	        	
 	        }
 
 		}
@@ -73,11 +71,12 @@ class RemoteBoss extends Actor {
 			if(TotalNumberOfWorker == sum)
 			{
 				//total_bitCoinMinned.foreach( println )
-				println("Trying to send message to Boss at ipAddress " + ipAddress)
-
+				//println("Trying to send message to Boss at ipAddress " + ipAddress)
 				var remoteWorker = context.actorFor("akka.tcp://MainActor@"+ipAddress+":7890/user/Boss")
 				remoteWorker !receiveMinnedCoinFromRemote(total_bitCoinMinned)
-				remoteWorker !finishedMining(number)  /*Have to check which function gets called */
+				remoteWorker !finishedMining(1)  /*Have to check which function gets called */
+				TotalNumberOfWorker = 0;
+				sum = 0
 			}
 			else
 			{
@@ -102,7 +101,7 @@ class Worker extends Actor
 		{
 			println("Mining starts on Remote Worker " + number );
 			var bitcoins_mined :ArrayBuffer[String] =  ArrayBuffer[String]();
-			val deadline = 10.seconds.fromNow
+			val deadline = 100.seconds.fromNow
 			var count = 0;
 			while(deadline.hasTimeLeft) {
 				/*  Reason for adding 'number' is, Different threads gets same random string as seed 
@@ -116,8 +115,8 @@ class Worker extends Actor
 				if( bitcoin.substring(0,k).equals("0"*k) )
 				{
 					//Bitcoin is found
-				bitcoins_mined += seed + "\t" + bitcoin
-				println(bitcoin)
+					bitcoins_mined += seed + "\t" + bitcoin
+					//println(bitcoin)
 				}
 				// if(count > 10000 )
 				// {
@@ -129,10 +128,9 @@ class Worker extends Actor
 			}
 			sender ! receiveMinnedCoin(bitcoins_mined)
 			println("Number Of iteration " +count  + " For Minner woker remote\t" + number)
-			sender ! finishedMining(number)
+			sender ! finishedMining(1)
 			//context.stop(self) /*Don't want to stop Remote*/
-		}
-	
+		}	
 	} 
 }
 

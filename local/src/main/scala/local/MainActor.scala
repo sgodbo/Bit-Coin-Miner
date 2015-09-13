@@ -27,6 +27,7 @@ class Worker extends Actor
 		{
 			println("Mining starts " + number);
 			var bitcoins_mined :ArrayBuffer[String] =  ArrayBuffer[String]();
+			/* deadline for each worker */
 			val deadline = 50.seconds.fromNow
 			var count = 0;
 			while(deadline.hasTimeLeft) {			
@@ -41,13 +42,14 @@ class Worker extends Actor
 					bitcoins_mined += seed + "\t" + bitcoin
 					//println(bitcoin)
 				  }
-				  if(count > 1000000)
-				  {
-				  	sender ! receiveMinnedCoin(bitcoins_mined)
-				  }
+				  // if(count > 1000000)
+				  // {
+				  // 	sender ! receiveMinnedCoin(bitcoins_mined)
+				  // }
 			}
 			println("Number Of iteration " +count  + " For Minner\t" + number)
-			sender ! finishedMining(number)
+		  	sender ! receiveMinnedCoin(bitcoins_mined)
+			sender ! finishedMining(1)
 			context.stop(self)
 		}	
 	} 
@@ -70,7 +72,7 @@ class Boss extends Actor
 				for( i <- 1 to 10 )
 				{
 					worker ! mining(k , i)
-					sum = sum + i;	 /*Race Condition?*/				
+					sum = sum + 1;	 /*Race Condition?*/				
 				}
 				//sum = sum + 10
 			}
@@ -82,7 +84,7 @@ class Boss extends Actor
 				{
 					println(" Calling ith worker " + i)
 					worker ! mining(k, i)
-					sum = sum + i;			/*Race Condition?*/				
+					sum = sum + 1;			/*Race Condition?*/				
 				}
 				//sum = sum + numberOfActors
 			}
@@ -91,18 +93,13 @@ class Boss extends Actor
 		{
 			println("Starting remote workers")
 	        val numberOfActors = 5  /*Should change this variable to spawn number of actors*/
-	        //val worker=context.actorSelection("akka.tcp://Worker@"+ipAddress+":5152/user/Worker")
-	        //val remoteWorker = context.actorSelection("akka.tcp://RemoteActor@127.0.0.1:7890/user/Worker")
-	        //val remoteWorker = context.actorFor("akka://RemoteActor@"+ipAddress+":5150/user/Worker")
 			var remoteWorker = context.actorFor("akka.tcp://RemoteActor@127.0.0.1:7890/user/Worker")
 			for( i <- 1 to numberOfActors )  /*  5 remote workers */
 				{
 					println(" Calling ith %d Time " + i)
 					remoteWorker !mining(k, i)
-					 sum = sum + i;
-					//remoteWorker ! "This is message from server"
+					sum = sum + 1;
 				}
-			//sum = sum + numberOfActors
 		}
 		case gotWorkRequest() =>
 		{
@@ -130,7 +127,7 @@ class Boss extends Actor
 				total_bitCoinMinned.foreach( println )
 			}
 			else
-				println("TotalNumberOfWorker  " + TotalNumberOfWorker)
+				println("Waiting for other Actors to complete  " + TotalNumberOfWorker)
 		}
 		case setNumberOfZeros(zeros :Int) =>
 		{
