@@ -38,9 +38,10 @@ class RemoteBoss extends Actor {
 	var number :Int = 0;
 	def receive =
 	{
-		case getWorkRequest(ipAddress :String) =>
+		case getWorkRequest(ipAddress_received :String) =>
 		{
 			println("Asking for work")
+			ipAddress = ipAddress_received
 			var remoteWorker = context.actorFor("akka.tcp://MainActor@"+ipAddress+":7890/user/Boss")
 			remoteWorker !gotWorkRequest()
 
@@ -69,11 +70,12 @@ class RemoteBoss extends Actor {
 		{
 			println("Finnished in worker")
 			TotalNumberOfWorker = TotalNumberOfWorker + number_local
-			var remoteWorker = context.actorFor("akka.tcp://MainActor@"+ipAddress+":7890/user/Boss")
 			if(TotalNumberOfWorker == sum)
 			{
 				//total_bitCoinMinned.foreach( println )
-				println("Trying to send message to Boss")
+				println("Trying to send message to Boss at ipAddress " + ipAddress)
+
+				var remoteWorker = context.actorFor("akka.tcp://MainActor@"+ipAddress+":7890/user/Boss")
 				remoteWorker !receiveMinnedCoinFromRemote(total_bitCoinMinned)
 				remoteWorker !finishedMining(number)  /*Have to check which function gets called */
 			}
